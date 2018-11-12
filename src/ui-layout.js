@@ -1180,28 +1180,32 @@ angular.module('ui.layout', [])
         });
 
         element.on('mousedown touchstart', function(e) {
-          ctrl.movingSplitbar = scope.splitbar;
-          ctrl.processSplitbar(scope.splitbar);
+		if(e.button === 0 || e.type === 'touchstart'){
+          		ctrl.movingSplitbar = scope.splitbar;
+          		ctrl.processSplitbar(scope.splitbar);
 
-          e.preventDefault();
-          e.stopPropagation();
+          		e.preventDefault();
+          		e.stopPropagation();
 
-          // Track that we are moving the splitbar
-          scope.splitbarMoving = true;
+          		// Track that we are moving the splitbar
+          		scope.splitbarMoving = true;
 
-          htmlElement.on('mousemove touchmove', function(event) {
-            scope.$apply(angular.bind(ctrl, ctrl.mouseMoveHandler, event));
-          });
-          return false;
+          		htmlElement.on('mousemove touchmove', handleMouseMove); 
+			return false;
+		}
         });
 
-        htmlElement.on('mouseup touchend', function(event) {
-          // Clear that we are moving the splitbar
-          scope.splitbarMoving = false;
+	function handleMouseMove(event){
+		scope.$apply(angular.bind(ctrl, ctrl.mouseMoveHandler, event));
+	}
 
-          scope.$apply(angular.bind(ctrl, ctrl.mouseUpHandler, event));
-          htmlElement.off('mousemove touchmove');
-        });
+	function handleMouseUp(event){
+		scope.splitbarMoving = false;
+		scope.$apply(angular.bind(ctrl, ctrl.mouseUpHandler, event));
+		htmlElement.off('mousemove touchmove', handleMouseMove);
+	}
+
+        htmlElement.on('mouseup touchend', handleMouseUp);
 
         scope.$watch('splitbar.size', function(newValue) {
           element.css(ctrl.sizeProperties.sizeProperty, newValue + 'px');
@@ -1257,15 +1261,13 @@ angular.module('ui.layout', [])
           }, timeOut, true, newValue);
         });
 
-        scope.$on('$destroy', function() {
-          htmlElement.off('mouseup touchend mousemove touchmove');
-        });
-
         //Add splitbar to layout container list
         ctrl.addContainer(scope.splitbar);
 
         element.on('$destroy', function() {
           ctrl.removeContainer(scope.splitbar);
+	  htmlElement.off('mouseup touchend', handleMouseUp);
+	  htmlElement.off('mousemove touchmove', handleMouseMove);
           scope.$evalAsync();
         });
       }
